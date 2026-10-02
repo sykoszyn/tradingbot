@@ -1,0 +1,7 @@
+# Filtro para aceptar una estrategia (fuera de muestra, con costos). Lo calcula el arnés, no el modelo.
+min_sharpe = 1.5
+max_drawdown = 0.15
+min_hit_rate = 0.55
+min_t_stat = 2.0
+min_years = 2.0
+min_trades = 30
