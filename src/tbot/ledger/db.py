@@ -71,6 +71,9 @@ class Ledger:
             (intent.client_id, _ts(ts), intent.symbol, intent.side, intent.qty, intent.ref_price, intent.stop_price, intent.take_profit, status, intent.reason, int(intent.is_exit), decision_id, p_setup),
         )
 
+    def has_fill(self, client_id: str, kind: str) -> bool:
+        return bool(self._rows("SELECT 1 FROM fills WHERE client_id = ? AND kind = ? LIMIT 1", (client_id, kind)))
+
     def log_fill(self, fill) -> None:
         self._exec("INSERT INTO fills (ts,client_id,symbol,side,qty,price,kind) VALUES (?,?,?,?,?,?,?)", (_ts(fill.ts), fill.client_id, fill.symbol, fill.side, fill.qty, fill.price, fill.kind))
 

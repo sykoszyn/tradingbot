@@ -17,8 +17,8 @@ def test_checklist_blocks_live_without_evidence(tmp_path):
     assert "WHAT COULD BLOW UP THIS ACCOUNT?" in md and "NO PASA" in md
     for q in ("paper coincide con el backtest", "kill switch se disparó", "delegado a un modelo", "calibrada con fills propios", "régimen de mercado rompería"):
         assert q in md
-    write_golive(rep, tmp_path, load_risk())
-    assert not golive_ok(tmp_path, load_risk())
+    write_golive(rep, tmp_path / "nuevo" / "state", load_risk())  # instalación nueva: la carpeta todavía no existe
+    assert not golive_ok(tmp_path / "nuevo" / "state", load_risk())
 
 
 def test_checklist_passes_with_full_evidence(tmp_path):

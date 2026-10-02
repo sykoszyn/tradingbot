@@ -131,6 +131,8 @@ def cmd_research(a, settings, secrets) -> int:
 
 
 def cmd_run(a, settings, secrets) -> int:
+    import time
+
     from .exec.router import OrderRouter
     from .golive.checklist import golive_ok
     from .ledger.db import Ledger
@@ -139,10 +141,17 @@ def cmd_run(a, settings, secrets) -> int:
     from .risk.limits import RiskEngine
 
     limits = load_risk()
-    spec, observe_only = _load_spec(observe=a.observe)
+    spec, observe_only = _load_spec(observe=a.observe or a.auto)
+    while spec is None and a.auto and not a.sim:
+        log.warning("No hay estrategia aprobada ni candidata: corré `tbot research`. Reintento en 1 hora.")
+        (settings.state_dir).mkdir(parents=True, exist_ok=True)
+        (settings.state_dir / "heartbeat").write_text(pd.Timestamp.now(tz="UTC").isoformat())
+        time.sleep(3600)
+        spec, observe_only = _load_spec(observe=True)
     if spec is None:
         print("No hay estrategia aprobada (strategy/strategy.json). Corré `tbot research`, o `tbot run --observe` con una candidata.")
         return 1
+    # --observe fuerza la observación; --auto observa solo si no hay estrategia aprobada
     observe = a.observe or observe_only
     live = settings.mode == "live" and not a.sim
     ok_live = golive_ok(settings.state_dir, limits)
@@ -192,7 +201,7 @@ def cmd_run(a, settings, secrets) -> int:
                     limits=limits, state_dir=settings.state_dir, events=load_events(ROOT / "config" / "events.csv"), observe=observe)
     ref["r"] = runner
     notifier.notify("start", f"▶️ Bot iniciado en {'REAL' if live else 'paper'}{' (observación)' if observe else ''} · {spec.name} v{spec.version}")
-    run_forever(runner=runner, broker=broker, tf_minutes=spec.timeframe_minutes, on_daily=lambda: _nightly(settings, secrets, runner, notifier), nightly_hour_et=settings.nightly_hour_et, telegram=bot)
+    run_forever(runner=runner, broker=broker, tf_minutes=spec.timeframe_minutes, on_daily=lambda: _nightly(settings, secrets, runner, notifier), nightly_hour_et=settings.nightly_hour_et, telegram=bot, heartbeat=settings.state_dir / "heartbeat")
     return 0
 
 
@@ -375,6 +384,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--rounds", type=int, default=3)
     run = sub.add_parser("run", help="corre el bot (paper por defecto)")
     run.add_argument("--observe", action="store_true", help="registra predicciones sin operar")
+    run.add_argument("--auto", action="store_true", help="opera con la estrategia aprobada; si no hay, observa con la candidata; si no hay ninguna, espera")
     run.add_argument("--sim", action="store_true", help="simulación con datos sintéticos, sin Alpaca")
     run.add_argument("--days", type=int, default=10)
     d = sub.add_parser("dashboard", help="dashboard en vivo")

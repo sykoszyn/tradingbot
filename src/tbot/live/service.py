@@ -20,7 +20,7 @@ def next_bar_close(now: pd.Timestamp, tf_minutes: int) -> pd.Timestamp:
     return (open_ + pd.Timedelta(minutes=tf_minutes * k)).tz_convert("UTC")
 
 
-def run_forever(*, runner, broker, tf_minutes: int, on_daily: Callable[[], None], nightly_hour_et: int, telegram=None, data_delay_s: int = 20, stop: threading.Event | None = None) -> None:
+def run_forever(*, runner, broker, tf_minutes: int, on_daily: Callable[[], None], nightly_hour_et: int, telegram=None, data_delay_s: int = 20, stop: threading.Event | None = None, heartbeat=None) -> None:
     stop = stop or threading.Event()
     if telegram is not None:
 
@@ -33,6 +33,8 @@ def run_forever(*, runner, broker, tf_minutes: int, on_daily: Callable[[], None]
     while not stop.is_set():
         try:
             now = pd.Timestamp.now(tz="UTC")
+            if heartbeat is not None:
+                heartbeat.write_text(now.isoformat())  # Docker reinicia el contenedor si esto deja de actualizarse
             et = now.tz_convert(ET)
             if et.hour >= nightly_hour_et and last_daily != et.date():
                 last_daily = et.date()

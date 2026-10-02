@@ -124,6 +124,7 @@ def run_checklist(ledger: Ledger, *, state_dir: Path, strategy_dir: Path, limits
 
 
 def write_golive(report: GoLiveReport, state_dir: Path, limits: RiskLimits) -> None:
+    Path(state_dir).mkdir(parents=True, exist_ok=True)
     (Path(state_dir) / "golive.json").write_text(json.dumps({"passed": report.passed, "at": pd.Timestamp.now(tz="UTC").isoformat(), "risk_fingerprint": limits.fingerprint}))
 
 

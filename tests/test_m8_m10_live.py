@@ -219,3 +219,17 @@ def test_next_bar_close():
 
     t = pd.Timestamp("2026-10-01 10:07", tz="America/New_York").tz_convert("UTC")
     assert next_bar_close(t, 15).tz_convert("America/New_York").strftime("%H:%M") == "10:15"
+
+
+def test_fills_are_not_recorded_twice_after_restart(tmp_path, bars):
+    from tbot.exec.broker import Fill
+
+    runner, broker, ledger, note = make_runner(tmp_path, bars)
+    t = bars["end"].iloc[100]
+    entry = Fill(t, "cid-1", "SPY", "buy", 5, 400.0, "entry")
+    exit_ = Fill(t + pd.Timedelta(minutes=30), "cid-1-tp", "SPY", "sell", 5, 404.0, "take_profit")
+    broker._fills = [entry, exit_]
+    runner._process_fills()
+    broker._fills = [entry, exit_]  # Alpaca vuelve a informar los mismos fills
+    runner._process_fills()
+    assert len(ledger.trades()) == 1

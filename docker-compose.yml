@@ -1,0 +1,40 @@
+# En el VPS: `docker compose up -d --build`. Ver deploy/README.md.
+services:
+  bot:
+    build: .
+    command: ["tbot", "run", "--auto"]
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./var:/app/var
+      - ./strategy:/app/strategy
+      - ./config:/app/config:ro   # solo lectura: nada dentro del contenedor puede cambiar los límites de riesgo
+    healthcheck:
+      test: ["CMD", "python", "-c", "import time,os,sys; p='/app/var/state/heartbeat'; sys.exit(0 if os.path.exists(p) and time.time()-os.path.getmtime(p) < 600 else 1)"]
+      interval: 2m
+      timeout: 10s
+      retries: 3
+      start_period: 15m
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+  dashboard:
+    build: .
+    command: ["tbot", "dashboard", "--host", "0.0.0.0", "--port", "8080"]
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./var:/app/var            # SQLite (WAL) necesita escribir archivos auxiliares aunque solo lea
+      - ./strategy:/app/strategy:ro
+      - ./config:/app/config:ro
+    ports:
+      - "127.0.0.1:8080:8080"     # solo accesible desde el propio servidor (entrás con un túnel SSH)
+
+  # se reinicia solo si el healthcheck del bot falla
+  autoheal:
+    image: willfarrell/autoheal:1.2.0
+    restart: unless-stopped
+    environment: { AUTOHEAL_CONTAINER_LABEL: all }
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

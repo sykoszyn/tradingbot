@@ -127,6 +127,8 @@ class Runner:
     # ------------------------------------------------------------------ fills
     def _process_fills(self) -> None:
         for f in self.broker.drain_fills():
+            if self.ledger.has_fill(f.client_id, f.kind):
+                continue  # ya registrado (por ejemplo, el broker lo vuelve a informar después de un reinicio)
             self.ledger.log_fill(f)
             if f.kind == "entry":
                 o = self.ledger.order(f.client_id) or {}
