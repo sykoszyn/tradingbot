@@ -1,0 +1,11 @@
+mode = "paper"                   # "paper" o "live". "live" se niega a arrancar si falla el chequeo final.
+symbols = ["SPY", "QQQ"]
+timeframe_minutes = 15
+data_dir = "var/data"
+state_dir = "var/state"
+ledger_path = "var/ledger.sqlite3"
+strategy_path = "strategy/strategy.json"
+scorer_path = "var/models/scorer.pkl"
+nightly_hour_et = 18             # el ciclo nocturno corre después del cierre (hora de Nueva York)
+opus_model = "claude-opus-5-5"
+opus_max_usd_per_night = 5.0

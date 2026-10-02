@@ -1,0 +1,12 @@
+# LÍMITES DUROS. Los lee solo el código determinístico (src/tbot/risk). Ningún modelo puede cambiarlos:
+# el ciclo nocturno de Opus no tiene acceso de escritura a este archivo y su huella se guarda en cada decisión.
+
+max_position_pct = 0.10          # tamaño máximo por posición, fracción del capital
+max_gross_exposure_pct = 0.50    # exposición total máxima
+daily_loss_limit_pct = 0.02      # si se pierde esto en el día: no más entradas hasta mañana
+max_drawdown_pct = 0.10          # caída desde el pico que dispara el kill switch (cierra todo y frena)
+manual_approval_usd = 1000       # operaciones de mayor monto piden aprobación por Telegram
+max_trades_per_day = 10
+min_position_pct = 0.01          # tamaño fijo mientras la calibración no esté verificada con fills propios
+kelly_fraction = 0.25            # un cuarto de Kelly, como máximo
+approval_timeout_minutes = 10    # una aprobación pendiente vence y no se ejecuta
