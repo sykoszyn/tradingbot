@@ -100,11 +100,12 @@ class StrategySpec(BaseModel):
 
 def render_markdown(spec: StrategySpec, metrics: dict | None = None, gate: dict | None = None) -> str:
     th = spec.thresholds
+    p = spec.params
     rule = {
-        "trend": f"tendencia > {spec.params['trend_min']:.4f} (media 16 vs 48) y pendiente > {spec.params['slope_min']:.4f}",
-        "meanrev": f"RSI(14) < {spec.params['rsi_max'] * 100:.0f} y cierre en el {spec.params['range_pos_max']:.0%} inferior del rango de 16 velas",
-        "breakout": f"cierre a menos de {abs(spec.params['dist_hi_min']):.2%} del máximo de 16 velas, volumen z > {spec.params['vol_z_min']:.1f} y flujo > {spec.params['flow_min']:.2f}",
-    }[spec.template]
+        "trend": lambda: f"tendencia > {p['trend_min']:.4f} (media 16 vs 48) y pendiente > {p['slope_min']:.4f}",
+        "meanrev": lambda: f"RSI(14) < {p['rsi_max'] * 100:.0f} y cierre en el {p['range_pos_max']:.0%} inferior del rango de 16 velas",
+        "breakout": lambda: f"cierre a menos de {abs(p['dist_hi_min']):.2%} del máximo de 16 velas, volumen z > {p['vol_z_min']:.1f} y flujo > {p['flow_min']:.2f}",
+    }[spec.template]()
     lines = [
         f"# Estrategia: {spec.name} (v{spec.version})",
         "",

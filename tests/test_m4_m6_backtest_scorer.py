@@ -206,3 +206,11 @@ def test_lookahead_cheat_is_detected(long_bars):
 
     assert not lookahead_check(long_bars, spec(), decide=cheat, feature_fn=cheat_features).passed
     assert lookahead_check(long_bars, spec(), decide=honest).passed
+
+
+def test_markdown_renders_for_every_template():
+    from tbot.strategy.spec import render_markdown
+
+    for tpl in ("trend", "meanrev", "breakout"):
+        md = render_markdown(spec(template=tpl))
+        assert "Stop" in md and "Take profit" in md and "Invalidación" in md
