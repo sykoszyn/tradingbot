@@ -1,0 +1,10 @@
+# Eventos macro programados. Si la estrategia tiene flatten_before_events = true, ese día no abre nada
+# y cierra todo 15 minutos antes. Formato: fecha,hora_et,nombre (hora de Nueva York).
+# ⚠️ LAS FECHAS DE ABAJO SON DE EJEMPLO. Reemplazalas con el calendario oficial (federalreserve.gov para FOMC,
+# bls.gov para CPI y empleo) antes de activar flatten_before_events.
+fecha,hora_et,nombre
+2026-10-14,08:30,CPI
+2026-10-28,14:00,FOMC
+2026-11-06,08:30,Empleo (NFP)
+2026-11-12,08:30,CPI
+2026-12-09,14:00,FOMC

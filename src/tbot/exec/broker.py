@@ -51,3 +51,14 @@ class SimBroker:
             avg = intent.ref_price if not cur or (cur.qty > 0) != (signed > 0) else (cur.avg_price * cur.qty + intent.ref_price * signed) / new_qty
             self._positions[intent.symbol] = Position(intent.symbol, new_qty, avg)
         return BrokerOrder(intent.client_id, intent.client_id, intent.symbol, intent.side, intent.qty, "filled")
+
+
+@dataclass(frozen=True)
+class Fill:
+    ts: object
+    client_id: str
+    symbol: str
+    side: str
+    qty: int
+    price: float
+    kind: str  # entry | stop | take_profit | exit

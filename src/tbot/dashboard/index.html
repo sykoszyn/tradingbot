@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tbot · en vivo</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--line:#e1e0d9;--s1:#2a78d6;--good:#006300;--bad:#d03b3b;--warn:#b26a00}
+@media (prefers-color-scheme:dark){:root{--bg:#0d0d0d;--card:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--line:#2c2c2a;--s1:#3987e5;--good:#0ca30c;--bad:#e66767;--warn:#f0b340}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:1100px;margin:0 auto;padding:16px}h1{font-size:18px;margin:0}h2{font-size:15px;margin:0 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.k{color:var(--muted);font-size:12px}.v{font-size:clamp(15px,4.1vw,22px);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.on{color:var(--good)}
+.banner{padding:10px 14px;border-radius:12px;margin:10px 0;font-weight:600}.kill{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.disabled{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th{color:var(--muted);font-weight:500;text-align:left;padding:6px}
+td{padding:6px;border-top:1px solid var(--line);vertical-align:middle}.bar{height:6px;border-radius:3px;background:var(--line);width:80px;display:inline-block;vertical-align:middle;margin-right:6px}
+.bar>i{display:block;height:100%;border-radius:3px;background:var(--s1)}.good{color:var(--good)}.bad{color:var(--bad)}.muted{color:var(--muted)}
+.tag{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+svg{width:100%;height:120px;display:block}.wrap{overflow-x:auto}
+pre{white-space:pre-wrap;font:13px/1.5 ui-monospace,monospace;color:var(--ink2)}
+</style>
+</head>
+<body><main>
+<h1>tbot · Alpaca paper · <span id="live" class="muted">conectando…</span></h1>
+<div id="banners"></div>
+<div class="grid">
+ <div class="card"><div class="k">Capital</div><div class="v" id="eq">—</div></div>
+ <div class="card"><div class="k">P&amp;L total (operaciones cerradas)</div><div class="v" id="pnl">—</div></div>
+ <div class="card"><div class="k">Operaciones · win rate</div><div class="v" id="tr">—</div></div>
+ <div class="card"><div class="k">Calibración (setup)</div><div class="v" id="cal">—</div></div>
+</div>
+<div class="card"><h2>Capital</h2><svg id="chart" role="img" aria-label="Evolución del capital"></svg></div>
+<div class="card" style="margin-top:10px"><h2 style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">Señales en vivo <label class="muted" style="font-weight:400;font-size:13px"><input type="checkbox" id="only" checked> solo señales y operaciones</label></h2>
+<div class="wrap"><table><thead><tr><th>Hora (NY)</th><th>Símbolo</th><th>Precio</th><th>Probabilidad</th><th>Confianza</th><th>Acción</th><th>Resultado</th><th>ms</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+<div class="card" style="margin-top:10px"><h2>Eventos</h2><div id="events" class="muted"></div></div>
+<div class="card" style="margin-top:10px"><h2>Estrategia</h2><pre id="strategy" class="muted">—</pre></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);const usd=v=>v==null?'—':(v<0?'−':'')+'US$'+Math.abs(Number(v)).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const NY={timeZone:'America/New_York'};let ALL=[];
+const pct=v=>v==null?'—':Math.round(v*100)+'%';const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ACT={none:'sin señal',holding:'en posición',entry_submitted:'compra enviada',needs_approval:'espera aprobación',rejected:'rechazada por riesgo',killed:'kill switch',strategy_disabled:'estrategia desactivada',blocked_event:'evento macro',size_zero:'sin ventaja',awaiting_approval:'espera aprobación'};
+function bar(p){return p==null?'—':`<span class="bar"><i style="width:${Math.round(p*100)}%"></i></span>${pct(p)}`}
+function row(d){const r=d.result?`<span class="${d.result.pnl>0?'good':'bad'}">${d.result.pnl>0?'▲':'▼'} ${usd(d.result.pnl)}</span> <span class="muted">${esc(d.result.exit)}</span>`:'<span class="muted">—</span>';
+ return `<tr><td>${new Date(d.ts).toLocaleString('es-AR',{...NY,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td><b>${esc(d.symbol)}</b></td><td>${usd(d.price)}</td><td>${bar(d.probability)}</td><td>${bar(d.confidence)}</td>
+ <td><span class="tag" title="${esc(d.reasons)}">${esc(ACT[d.action]||d.action)}</span>${d.action==='rejected'||d.action==='needs_approval'?`<div class="muted" style="font-size:12px">${esc(d.reasons)}</div>`:''}</td><td>${r}</td><td class="muted">${d.latency_ms==null?'':d.latency_ms.toFixed(1)}</td></tr>`}
+function chart(pts){const s=$('chart');if(!pts||pts.length<2){s.innerHTML='<text x="8" y="60" fill="currentColor" opacity=".5">Todavía no hay datos</text>';return}
+ const W=s.clientWidth||800,H=120,vs=pts.map(p=>p[1]),mn=Math.min(...vs),mx=Math.max(...vs),sp=(mx-mn)||1;
+ const d=pts.map((p,i)=>`${i?'L':'M'}${(i/(pts.length-1)*(W-120)+110).toFixed(1)},${(H-10-(p[1]-mn)/sp*(H-30)).toFixed(1)}`).join('');
+ s.setAttribute('viewBox',`0 0 ${W} ${H}`);s.innerHTML=`<text x="0" y="24" font-size="11" fill="var(--muted)">${usd(mx)}</text><text x="0" y="${H-10}" font-size="11" fill="var(--muted)">${usd(mn)}</text><path d="${d}" fill="none" stroke="var(--s1)" stroke-width="2"/>`}
+async function load(){const s=await (await fetch('/api/summary')).json();$('eq').textContent=usd(s.equity);$('pnl').innerHTML=`<span class="${s.pnl_total>=0?'good':'bad'}">${usd(s.pnl_total)}</span>`;
+ $('tr').textContent=`${s.trades} · ${pct(s.win_rate)}`;const c=s.calibration&&s.calibration.setup_quality;$('cal').textContent=s.calibration?(s.calibration.calibrated?'✓ verificada':`⏳ n=${c?c.n:0} de 200`):'sin datos aún';
+ $('banners').innerHTML=(s.kill?`<div class="banner kill">🛑 Kill switch activo: ${esc(s.kill.reason)}</div>`:'')+(s.strategy_disabled?`<div class="banner disabled">⛔ Estrategia desactivada: ${esc(s.strategy_disabled)}</div>`:'');
+ $('events').innerHTML=s.events.map(e=>`<div>${new Date(e.ts).toLocaleString('es-AR',NY)} · <b>${esc(e.kind)}</b> · ${esc(e.message)}</div>`).join('')||'Sin eventos';
+ $('strategy').textContent=s.strategy_md||'Ninguna estrategia pasó el filtro todavía: el bot no opera.';chart(s.equity_curve);
+ ALL=await (await fetch('/api/decisions?limit=1000')).json();render()}
+const show=d=>!$('only').checked||d.signal||d.result||!['none','holding'].includes(d.action);
+function render(){const v=ALL.filter(show).slice(0,200);$('rows').innerHTML=v.length?v.map(row).join(''):'<tr><td colspan="8" class="muted">Todavía no hubo señales. Desmarcá el filtro para ver cada vela evaluada.</td></tr>'}
+$('only').onchange=render;
+load();setInterval(load,30000);
+const es=new EventSource('/api/stream');es.onopen=()=>{$('live').textContent='● en vivo';$('live').className='on'};es.onerror=()=>{$('live').textContent='reconectando…';$('live').className='muted'};
+es.onmessage=m=>{const p=JSON.parse(m.data);if(p.decisions.length){ALL=p.decisions.reverse().concat(ALL).slice(0,2000);render()}if(p.events.length)load()};
+</script>
+</body></html>
