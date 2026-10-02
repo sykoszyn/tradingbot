@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 
 import pytest
@@ -18,7 +19,7 @@ def test_risk_limits_loaded_from_file():
 
 def test_risk_limits_are_immutable():
     r = load_risk()
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         r.max_position_pct = 0.9  # type: ignore[misc]
 
 
