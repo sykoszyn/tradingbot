@@ -18,3 +18,5 @@ class CostModel:
 
     def sell_fees(self, qty: int, price: float) -> float:
         return qty * price * self.sec_fee_rate + min(self.taf_cap, qty * self.taf_per_share)
+
+DEFAULT_COSTS = CostModel()

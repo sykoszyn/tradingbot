@@ -14,7 +14,7 @@ from ..scorer.model import CalibratedScorer
 from ..scorer.questions import QUESTIONS
 from ..state.engine import FEATURES, features_frame
 from ..strategy.spec import StrategySpec
-from .costs import CostModel
+from .costs import DEFAULT_COSTS, CostModel
 from .engine import BacktestResult, Decide, run_backtest
 from .metrics import compute_metrics
 
@@ -62,7 +62,7 @@ def walk_forward(
     *,
     train_days: int = 250,
     test_days: int = 63,
-    costs: CostModel = CostModel(),
+    costs: CostModel = DEFAULT_COSTS,
     limits: RiskLimits | None = None,
     decide: Decide | None = None,
     feature_fn: Callable[[pd.DataFrame], pd.DataFrame] = features_frame,

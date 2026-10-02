@@ -25,7 +25,7 @@ from ..scorer.questions import QUESTIONS
 from ..state.engine import FEATURES, features_frame
 from ..strategy.signal import Signal
 from ..strategy.spec import StrategySpec
-from .costs import CostModel
+from .costs import DEFAULT_COSTS, CostModel
 
 __all__ = ["Signal", "Trade", "BacktestResult", "run_backtest"]
 
@@ -102,7 +102,7 @@ def run_backtest(
     *,
     decide: Decide | None = None,
     probs_by_symbol: dict[str, dict[str, np.ndarray]] | None = None,
-    costs: CostModel = CostModel(),
+    costs: CostModel = DEFAULT_COSTS,
     limits: RiskLimits | None = None,
     calibrated: bool = True,
     start_equity: float = 100_000.0,
@@ -122,7 +122,7 @@ def run_backtest(
     feat_cols = {s: [c for c in f.columns if c not in ("atr", "price")] for s, f in feats.items()}
     feat_np = {s: feats[s][feat_cols[s]].to_numpy(float) for s in bars}
     atr_np = {s: feats[s]["atr"].to_numpy(float) for s in bars}
-    O = {s: b["open"].to_numpy(float) for s, b in bars.items()}
+    Op = {s: b["open"].to_numpy(float) for s, b in bars.items()}
     H = {s: b["high"].to_numpy(float) for s, b in bars.items()}
     Lo = {s: b["low"].to_numpy(float) for s, b in bars.items()}
     C = {s: b["close"].to_numpy(float) for s, b in bars.items()}
@@ -171,7 +171,7 @@ def run_backtest(
             # 1) entrada pendiente: se llena a la apertura
             if s in pending and not killed:
                 sig, atr_d, di = pending.pop(s)
-                fill = O[s][i] + costs.market_slip(O[s][i], atr_d)
+                fill = Op[s][i] + costs.market_slip(Op[s][i], atr_d)
                 stop_dist = spec.sl_atr * atr_d
                 eq = equity()
                 qty = position_shares(p=sig.p_setup, b=sig.b, stop_distance=stop_dist, price=fill, equity=eq, limits=limits, calibrated=calibrated, p_min=0.0)
@@ -191,10 +191,10 @@ def run_backtest(
                 p = open_[s]
                 p.bars_held += 1
                 if Lo[s][i] <= p.stop:
-                    px = (O[s][i] if O[s][i] < p.stop else p.stop) - costs.market_slip(p.stop, p.atr)
+                    px = (Op[s][i] if Op[s][i] < p.stop else p.stop) - costs.market_slip(p.stop, p.atr)
                     close_pos(s, i, px, "stop", ts)
                 elif H[s][i] >= p.tp:
-                    close_pos(s, i, max(O[s][i], p.tp), "take_profit", ts)
+                    close_pos(s, i, max(Op[s][i], p.tp), "take_profit", ts)
                 elif p.bars_held >= spec.max_hold_bars:
                     close_pos(s, i, C[s][i] - costs.market_slip(C[s][i], p.atr), "time", ts)
                 elif spec.flatten_eod and last_of_day[s][i]:
